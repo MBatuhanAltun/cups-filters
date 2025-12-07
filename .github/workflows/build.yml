@@ -1,0 +1,40 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout cups-filters sources
+        uses: actions/checkout@v4
+      - name: Show Ubuntu version
+        run: cat /etc/os-release | grep PRETTY_NAME | awk -F '=' '{print $2}'
+      - name: Update build environment
+        run: |
+          sudo apt-get update --fix-missing -y
+          sudo apt-get upgrade --fix-missing -y
+      - name: Install prerequisites
+        run: |
+          sudo apt-get install -y \
+            autoconf automake autopoint libtool pkg-config gettext \
+            build-essential libjpeg-dev libpng-dev libpoppler-glib-dev \
+            libjxl-dev ghostscript libexif-dev libppd-dev libcupsfilters-dev \
+            libcups2-dev mupdf-tools
+      - name: Bootstrap cups-filters
+        run: ./autogen.sh
+      - name: Configure cups-filters
+        run: ./configure
+      - name: Build cups-filters
+        run: make -j$(nproc)
+      - name: Test cups-filters
+        run: make check
